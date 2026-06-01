@@ -1,0 +1,44 @@
+{% extends "blog/base.html" %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-card">
+
+        <div class="auth-card__logo">
+            <div class="auth-card__logo-icon">D</div>
+        </div>
+
+        <h1 class="auth-card__title">Utwórz konto</h1>
+        <p class="auth-card__subtitle">Dołącz do DevBlog już dziś</p>
+
+        <form method="post">
+            {% csrf_token %}
+
+            {% for field in form %}
+            <div class="form-group">
+                {% if field.label %}
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {% endif %}
+                {{ field }}
+                {% if field.errors %}
+                    {% for error in field.errors %}
+                    <p class="form-error">{{ error }}</p>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <button type="submit" class="btn btn--primary btn--block btn--lg" style="margin-top:8px;">
+                Utwórz konto
+            </button>
+
+        </form>
+
+        <div style="text-align:center; margin-top:16px; font-size:13px; color: var(--color-text-meta);">
+            Masz już konto?
+            <a href="{% url 'blog:login' %}"><strong>Zaloguj się</strong></a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

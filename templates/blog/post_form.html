@@ -1,0 +1,231 @@
+{% extends "blog/base.html" %}
+
+{% block content %}
+<div class="layout" style="max-width:900px; grid-template-columns: 1fr 280px;">
+
+    <main>
+        <div class="post-detail">
+            <div class="post-detail__header">
+                <h1 class="post-detail__title" style="font-size:22px;">
+                    {% if action == "create" %} Nowy wpis{% else %} Edytuj wpis{% endif %}
+                </h1>
+            </div>
+
+            <div class="post-detail__body" style="padding:24px;">
+                <form method="post" enctype="multipart/form-data">
+                    <!-- enctype="multipart/form-data" WYMAGANE przy przesyłaniu plików -->
+                    <!-- W PHP też musiałeś to dodać do <form> -->
+                    {% csrf_token %}
+
+                    <!-- TYTUŁ -->
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.title.id_for_label }}">
+                            {{ form.title.label }}
+                        </label>
+                        {{ form.title }}
+                        {% for error in form.title.errors %}
+                        <p class="form-error">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <!-- KATEGORIA I STATUS obok siebie -->
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                        <div class="form-group">
+                            <label class="form-label" for="{{ form.category.id_for_label }}">
+                                {{ form.category.label }}
+                            </label>
+                            {{ form.category }}
+                            {% for error in form.category.errors %}
+                            <p class="form-error">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="{{ form.status.id_for_label }}">
+                                {{ form.status.label }}
+                            </label>
+                            {{ form.status }}
+                            {% for error in form.status.errors %}
+                            <p class="form-error">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- TAGI -->
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.tags_input.id_for_label }}">
+                            {{ form.tags_input.label }}
+                        </label>
+                        {{ form.tags_input }}
+                        <p class="form-hint">{{ form.tags_input.help_text }}</p>
+                        {% for error in form.tags_input.errors %}
+                        <p class="form-error">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <!-- ZDJĘCIE -->
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.image.id_for_label }}">
+                            {{ form.image.label }}
+                        </label>
+
+                        <!-- Podgląd istniejącego zdjęcia przy edycji -->
+                        {% if form.instance.image %}
+                        <div style="margin-bottom:10px;">
+                            <img
+                                src="{{ form.instance.image.url }}"
+                                alt="Aktualne zdjęcie"
+                                style="max-height:200px; border-radius:8px; border:1px solid var(--color-border);"
+                                id="current-image"
+                            >
+                            <p class="form-hint">Aktualne zdjęcie. Wybierz nowe, żeby je zmienić.</p>
+                        </div>
+                        {% endif %}
+
+                        {{ form.image }}
+                        <p class="form-hint">{{ form.image.help_text }}</p>
+                        {% for error in form.image.errors %}
+                        <p class="form-error">{{ error }}</p>
+                        {% endfor %}
+
+                        <!-- Podgląd nowego zdjęcia przed zapisem -->
+                        <div id="image-preview-container" style="display:none; margin-top:10px;">
+                            <img id="image-preview" src="#" alt="Podgląd"
+                                 style="max-height:200px; border-radius:8px; border:1px solid var(--color-border);">
+                        </div>
+                    </div>
+
+                    <!-- TREŚĆ -->
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.body.id_for_label }}">
+                            {{ form.body.label }}
+                        </label>
+                        {{ form.body }}
+                        {% for error in form.body.errors %}
+                        <p class="form-error">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <!-- ZAJAWKA -->
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.excerpt.id_for_label }}">
+                            {{ form.excerpt.label }}
+                        </label>
+                        {{ form.excerpt }}
+                        <p class="form-hint">Jeśli zostawisz puste, zostanie wygenerowana automatycznie z treści.</p>
+                        {% for error in form.excerpt.errors %}
+                        <p class="form-error">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <!-- PRZYCISKI -->
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:8px;">
+                        <button type="submit" class="btn btn--primary btn--lg">
+                            {% if action == "create" %}&#10003; Opublikuj wpis{% else %}&#10003; Zapisz zmiany{% endif %}
+                        </button>
+                        {% if action == "edit" and post %}
+                        <a href="{{ post.get_absolute_url }}" class="btn btn--outline btn--lg">
+                            Anuluj
+                        </a>
+                        <button
+                            type="button"
+                            class="btn btn--danger btn--lg"
+                            onclick="document.getElementById('delete-form').style.display='block'; this.style.display='none';"
+                            style="margin-left:auto;"
+                        >
+                            &#128465; Usuń wpis
+                        </button>
+                        {% else %}
+                        <a href="{% url 'blog:home' %}" class="btn btn--outline btn--lg">
+                            Anuluj
+                        </a>
+                        {% endif %}
+                    </div>
+
+                    <!-- Ukryty formularz usuwania -->
+                    {% if action == "edit" and post %}
+                    <div id="delete-form" style="display:none; margin-top:16px; padding:16px; background:#fff5f5; border:1px solid #fed7d7; border-radius:8px;">
+                        <p style="font-size:14px; color: #c53030; margin-bottom:12px; font-weight:600;">
+                            &#9888; Czy na pewno chcesz usunąć ten wpis? Tej operacji nie można cofnąć.
+                        </p>
+                        <form method="post" action="{% url 'blog:post_delete' pk=post.pk %}">
+                            {% csrf_token %}
+                            <div style="display:flex; gap:8px;">
+                                <button type="submit" class="btn btn--danger">Tak, usuń</button>
+                                <button
+                                    type="button"
+                                    class="btn btn--outline"
+                                    onclick="document.getElementById('delete-form').style.display='none'; document.querySelector('.btn--danger').style.display='inline-flex';"
+                                >
+                                    Anuluj
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    {% endif %}
+
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- SIDEBAR z podpowiedziami -->
+    <aside class="sidebar">
+        <div class="sidebar__widget">
+            <div class="sidebar__widget-header"> Wskazówki</div>
+            <div class="sidebar__widget-body" style="font-size:13px; line-height:1.7; color: var(--color-text-meta);">
+                <p style="margin-bottom:8px;"><strong style="color:var(--color-text);">Tytuł</strong> - powinien być zwięzły i przyciągać uwagę.</p>
+                <p style="margin-bottom:8px;"><strong style="color:var(--color-text);">Tagi</strong> - pomagają czytelnikom znaleźć wpis przez wyszukiwarkę.</p>
+                <p style="margin-bottom:8px;"><strong style="color:var(--color-text);">Zdjęcie</strong> - max 5 MB, formaty JPG/PNG/WEBP.</p>
+                <p style="margin-bottom:8px;"><strong style="color:var(--color-text);">Szkic</strong> - wpis nie będzie widoczny publicznie dopóki nie zmienisz statusu.</p>
+                <p><strong style="color:var(--color-text);">Zajawka</strong> - wyświetla się na liście wpisów. Jeśli pusta, zostanie wycięta z treści.</p>
+            </div>
+        </div>
+
+        {% if action == "edit" and post %}
+        <div class="sidebar__widget">
+            <div class="sidebar__widget-header"> Info o wpisie</div>
+            <div class="sidebar__widget-body" style="font-size:13px; line-height:2;">
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="color: var(--color-text-meta);">Utworzono:</span>
+                    <span>{{ post.created_at|date:"d.m.Y" }}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="color: var(--color-text-meta);">Komentarzy:</span>
+                    <span>{{ post.get_comment_count }}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="color: var(--color-text-meta);">Polubień:</span>
+                    <span>{{ post.get_like_count }}</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </aside>
+
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+// Podgląd zdjęcia przed zapisem
+document.querySelector('input[type="file"]')?.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            const preview = document.getElementById('image-preview');
+            const container = document.getElementById('image-preview-container');
+            if (preview && container) {
+                preview.src = ev.target.result;
+                container.style.display = 'block';
+                // Ukryj stare zdjęcie jeśli jest
+                const current = document.getElementById('current-image');
+                if (current) current.style.opacity = '0.4';
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+});
+</script>
+{% endblock %}

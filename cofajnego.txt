@@ -1,0 +1,1 @@
+fajne jest to że Django domyślnie hashuje hasła i robi to bardzo dobrze. Ty praktycznie nigdy nie zapisujesz hasła ręcznie do bazy jak w PHP. Korzystasz z systemu użytkowników Django i wszystko dzieje się automatycznie.

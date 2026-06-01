@@ -1,0 +1,171 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ page_title|default:"Blog" }}{% endblock %} — DevBlog</title>
+    <meta name="description" content="{% block description %}Blog o programowaniu i technologii{% endblock %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- Skrypt motywu uruchamiamy PRZED renderowaniem body, żeby uniknąć mignięcia -->
+<script>
+(function() {
+    // Odczytujemy zapisane ustawienia z localStorage
+    // localStorage to jak ciasteczko po stronie JS — persystuje między odświeżeniami
+    var darkMode = localStorage.getItem('darkMode') === 'true';
+    var theme = localStorage.getItem('theme') || 'orange';
+
+    // Klasa motywu z serwera (profil zalogowanego użytkownika) ma pierwszeństwo
+    var serverTheme = '{{ request.user.profile.theme|default:"orange" }}';
+    if (serverTheme && serverTheme !== 'orange') {
+        theme = serverTheme;
+        localStorage.setItem('theme', theme);
+    }
+
+    if (darkMode || theme === 'dark') {
+        document.body.classList.add('dark-mode');
+        if (theme === 'dark') document.body.classList.add('theme-dark');
+    } else {
+        document.body.classList.add('theme-' + theme);
+    }
+})();
+</script>
+
+<!-- NAWIGACJA -->
+<nav class="navbar">
+    <div class="navbar__inner">
+
+        <a href="{% url 'blog:home' %}" class="navbar__logo">
+            <!-- <div class="navbar__logo-icon">D</div> -->
+            DevBlog
+        </a>
+
+        <div class="navbar__search">
+            <form class="navbar__search-form" method="get" action="{% url 'blog:search' %}">
+                <span class="navbar__search-icon"></span>
+                <input
+                    type="search"
+                    name="q"
+                    class="navbar__search-input"
+                    placeholder="Szukaj wpisów..."
+                    value="{{ request.GET.q|default:'' }}"
+                    autocomplete="off"
+                >
+            </form>
+        </div>
+
+        <div class="navbar__actions">
+
+            <!-- Przycisk dark mode -->
+            <button class="dark-mode-toggle" id="darkModeToggle" title="Przełącz dark mode">
+                &#9790;
+            </button>
+
+            {% if user.is_authenticated %}
+                <!-- Przycisk nowego wpisu -->
+                <a href="{% url 'blog:post_create' %}" class="btn btn--primary btn--sm">
+                    &#43; Nowy wpis
+                </a>
+
+                <a href="{% url 'blog:profile_detail' username=user.username %}" class="navbar__user">
+                    <div class="navbar__avatar">{{ user.username|first|upper }}</div>
+                    {{ user.username }}
+                    {% if user.profile.is_verified %}
+                    <span class="verified-badge" title="Zweryfikowany użytkownik">&#10003;</span>
+                    {% endif %}
+                </a>
+
+                <a href="{% url 'blog:profile_edit' %}" class="btn btn--ghost btn--sm">&#9998;</a>
+
+                <form method="post" action="{% url 'blog:logout' %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn--outline btn--sm">Wyloguj</button>
+                </form>
+            {% else %}
+                <a href="{% url 'blog:login' %}" class="btn btn--outline btn--sm">Zaloguj</a>
+                <a href="{% url 'blog:register' %}" class="btn btn--primary btn--sm">Zarejestruj</a>
+            {% endif %}
+
+        </div>
+
+    </div>
+</nav>
+
+<!-- KOMUNIKATY -->
+{% if messages %}
+<div class="messages">
+    {% for message in messages %}
+    <div class="alert alert--{{ message.tags|default:'info' }}">
+        <span>{{ message }}</span>
+        <button class="alert__close" onclick="this.parentElement.remove()">&#215;</button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% block content %}{% endblock %}
+
+<footer class="footer">
+    <p>&copy; {% now "Y" %} DevBlog. Zbudowany z Django 5.</p>
+</footer>
+
+{% block extra_js %}{% endblock %}
+
+<script>
+// Dark mode toggle
+(function() {
+    var btn = document.getElementById('darkModeToggle');
+    if (!btn) return;
+
+    function isDark() {
+        return document.body.classList.contains('dark-mode');
+    }
+
+    // Aktualizuj ikonę przycisku
+    function updateIcon() {
+        btn.innerHTML = isDark() ? '&#9728;' : '&#9790;';
+        btn.title = isDark() ? 'Wyłącz dark mode' : 'Włącz dark mode';
+    }
+
+    updateIcon();
+
+    btn.addEventListener('click', function() {
+        var body = document.body;
+        if (isDark()) {
+            body.classList.remove('dark-mode', 'theme-dark');
+            var savedTheme = localStorage.getItem('theme') || 'orange';
+            if (savedTheme === 'dark') savedTheme = 'orange';
+            // Usuń wszystkie klasy motywów i dodaj właściwy
+            ['orange','blue','green','purple','red','teal','dark'].forEach(function(t) {
+                body.classList.remove('theme-' + t);
+            });
+            body.classList.add('theme-' + savedTheme);
+            localStorage.setItem('darkMode', 'false');
+        } else {
+            ['orange','blue','green','purple','red','teal'].forEach(function(t) {
+                body.classList.remove('theme-' + t);
+            });
+            body.classList.add('dark-mode');
+            localStorage.setItem('darkMode', 'true');
+        }
+        updateIcon();
+    });
+})();
+
+// Auto-ukrywanie alertów
+setTimeout(function() {
+    document.querySelectorAll('.alert').forEach(function(el) {
+        el.style.transition = 'opacity 0.5s';
+        el.style.opacity = '0';
+        setTimeout(function() { el.remove(); }, 500);
+    });
+}, 5000);
+</script>
+
+</body>
+</html>

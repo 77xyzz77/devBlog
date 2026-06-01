@@ -1,0 +1,148 @@
+{% extends "blog/base.html" %}
+{% load humanize %}
+
+{% block content %}
+<div class="layout">
+
+    <main>
+        {% if page_obj.object_list %}
+            {% for post in page_obj %}
+            <article class="post-card">
+
+                <div class="post-card__votes">
+                    <span class="post-card__vote-btn">&#9650;</span>
+                    <span class="post-card__vote-count">{{ post.get_like_count }}</span>
+                </div>
+
+                <div class="post-card__body">
+                    <div class="post-card__meta">
+                        {% if post.category %}
+                        <a href="{{ post.category.get_absolute_url }}" class="post-card__category">
+                            {{ post.category.name }}
+                        </a>
+                        <span>•</span>
+                        {% endif %}
+                        <span>Dodane przez</span>
+                        <a href="{% url 'blog:profile_detail' username=post.author.username %}">
+                            <strong>{{ post.author.username }}</strong>
+                        </a>
+                        {% if post.author.profile.is_verified %}
+                        <span class="verified-badge" title="Zweryfikowany użytkownik">&#10003;</span>
+                        {% endif %}
+                        <span>•</span>
+                        <span>{{ post.publish_date|naturaltime }}</span>
+                    </div>
+
+                    <h2 class="post-card__title">
+                        <a href="{{ post.get_absolute_url }}">{{ post.title }}</a>
+                    </h2>
+
+                    {% if post.excerpt %}
+                    <p class="post-card__excerpt">{{ post.excerpt }}</p>
+                    {% endif %}
+
+                    {% if post.tags.all %}
+                    <div class="tags">
+                        {% for tag in post.tags.all %}
+                        <a href="{% url 'blog:search' %}?q={{ tag.name }}" class="tag">#{{ tag.name }}</a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="post-card__footer">
+                        <a href="{{ post.get_absolute_url }}#komentarze" class="post-card__action">
+                            &#128172; {{ post.get_comment_count }} komentarz{{ post.get_comment_count|pluralize:"e,y,y" }}
+                        </a>
+                        <a href="{{ post.get_absolute_url }}" class="post-card__action">
+                            &#128279; Czytaj więcej
+                        </a>
+                        {% if user == post.author %}
+                        <a href="{% url 'blog:post_edit' pk=post.pk %}" class="post-card__action" style="margin-left:auto;">
+                            &#9998; Edytuj
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Miniatura zdjęcia (ukryta na mobile) -->
+                {% if post.image %}
+                <img
+                    src="{{ post.image.url }}"
+                    alt="{{ post.title }}"
+                    class="post-card__image"
+                    loading="lazy"
+                >
+                {% endif %}
+
+            </article>
+            {% endfor %}
+
+            {% if page_obj.has_other_pages %}
+            <nav class="pagination">
+                {% if page_obj.has_previous %}
+                <a href="?strona={{ page_obj.previous_page_number }}" class="pagination__item">&#8249; Poprzednia</a>
+                {% else %}
+                <span class="pagination__item pagination__item--disabled">&#8249; Poprzednia</span>
+                {% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <span class="pagination__item pagination__item--active">{{ num }}</span>
+                    {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+                    <a href="?strona={{ num }}" class="pagination__item">{{ num }}</a>
+                    {% endif %}
+                {% endfor %}
+                {% if page_obj.has_next %}
+                <a href="?strona={{ page_obj.next_page_number }}" class="pagination__item">Następna &#8250;</a>
+                {% else %}
+                <span class="pagination__item pagination__item--disabled">Następna &#8250;</span>
+                {% endif %}
+            </nav>
+            {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state__icon">&#128221;</div>
+            <h2 class="empty-state__title">Brak wpisów</h2>
+            <p class="empty-state__text">Nie ma jeszcze żadnych wpisów. Bądź pierwszy!</p>
+            <br>
+            {% if user.is_authenticated %}
+            <a href="{% url 'blog:post_create' %}" class="btn btn--primary">&#43; Napisz pierwszy wpis</a>
+            {% else %}
+            <a href="{% url 'blog:register' %}" class="btn btn--primary">Zarejestruj się</a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+    </main>
+
+    <aside class="sidebar">
+        {% if categories %}
+        <div class="sidebar__widget">
+            <div class="sidebar__widget-header">&#128193; Kategorie</div>
+            <div class="sidebar__widget-body">
+                {% for category in categories %}
+                <a href="{{ category.get_absolute_url }}" class="sidebar__category-link">
+                    <span>{{ category.name }}</span>
+                    <span class="sidebar__category-count">{{ category.post_count }}</span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if not user.is_authenticated %}
+        <div class="sidebar__widget">
+            <div class="sidebar__widget-header">&#127968; Dołącz do DevBlog</div>
+            <div class="sidebar__widget-body">
+                <p style="font-size:13px; color: var(--color-text-meta); margin-bottom:12px;">
+                    Zarejestruj się, żeby pisać wpisy, komentować i lajkować treści.
+                </p>
+                <a href="{% url 'blog:register' %}" class="btn btn--primary btn--block" style="margin-bottom:8px;">Zarejestruj się</a>
+                <a href="{% url 'blog:login' %}" class="btn btn--outline btn--block">Zaloguj się</a>
+            </div>
+        </div>
+        {% endif %}
+    </aside>
+
+</div>
+{% endblock %}

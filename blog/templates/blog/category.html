@@ -1,0 +1,122 @@
+{% extends "blog/base.html" %}
+{% load humanize %}
+
+{% block content %}
+<div class="layout">
+
+    <main>
+
+        <!-- Nagłówek kategorii -->
+        <div class="post-detail" style="margin-bottom:10px;">
+            <div class="post-detail__header">
+                <div class="post-detail__meta">
+                    <span>&#128193; Kategoria</span>
+                </div>
+                <h1 class="post-detail__title">{{ category.name }}</h1>
+                {% if category.description %}
+                <p style="font-size:15px; color: #4a4a4a; margin-top:8px; line-height:1.6;">
+                    {{ category.description }}
+                </p>
+                {% endif %}
+                <p style="font-size:13px; color: var(--color-text-meta); margin-top:8px;">
+                    {{ page_obj.paginator.count }} wpis{{ page_obj.paginator.count|pluralize:"e,ów,ów" }}
+                </p>
+            </div>
+        </div>
+
+        <!-- Lista postów — identyczna jak w home.html -->
+        {% if page_obj.object_list %}
+            {% for post in page_obj %}
+            <article class="post-card">
+                <div class="post-card__votes">
+                    <span class="post-card__vote-btn">&#9650;</span>
+                    <span class="post-card__vote-count">{{ post.get_like_count }}</span>
+                </div>
+                <div class="post-card__body">
+                    <div class="post-card__meta">
+                        <span>Dodane przez</span>
+                        <a href="{% url 'blog:profile_detail' username=post.author.username %}">
+                            <strong>{{ post.author.username }}</strong>
+                        </a>
+                        <span>•</span>
+                        <span>{{ post.publish_date|naturaltime }}</span>
+                    </div>
+                    <h2 class="post-card__title">
+                        <a href="{{ post.get_absolute_url }}">{{ post.title }}</a>
+                    </h2>
+                    {% if post.excerpt %}
+                    <p class="post-card__excerpt">{{ post.excerpt }}</p>
+                    {% endif %}
+                    {% if post.tags.all %}
+                    <div class="tags">
+                        {% for tag in post.tags.all %}
+                        <a href="{% url 'blog:search' %}?q={{ tag.name }}" class="tag">#{{ tag.name }}</a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <div class="post-card__footer">
+                        <a href="{{ post.get_absolute_url }}#komentarze" class="post-card__action">
+                            &#128172; {{ post.get_comment_count }} komentarz{{ post.get_comment_count|pluralize:"e,y,y" }}
+                        </a>
+                        <a href="{{ post.get_absolute_url }}" class="post-card__action">
+                            &#128279; Czytaj więcej
+                        </a>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+
+            {% if page_obj.has_other_pages %}
+            <nav class="pagination">
+                {% if page_obj.has_previous %}
+                <a href="?strona={{ page_obj.previous_page_number }}" class="pagination__item">&#8249; Poprzednia</a>
+                {% else %}
+                <span class="pagination__item pagination__item--disabled">&#8249; Poprzednia</span>
+                {% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <span class="pagination__item pagination__item--active">{{ num }}</span>
+                    {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+                    <a href="?strona={{ num }}" class="pagination__item">{{ num }}</a>
+                    {% endif %}
+                {% endfor %}
+                {% if page_obj.has_next %}
+                <a href="?strona={{ page_obj.next_page_number }}" class="pagination__item">Następna &#8250;</a>
+                {% else %}
+                <span class="pagination__item pagination__item--disabled">Następna &#8250;</span>
+                {% endif %}
+            </nav>
+            {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state__icon">&#128193;</div>
+            <h2 class="empty-state__title">Brak wpisów w tej kategorii</h2>
+            <p class="empty-state__text">Ta kategoria nie ma jeszcze żadnych wpisów.</p>
+            <br>
+            <a href="{% url 'blog:home' %}" class="btn btn--primary">Strona główna</a>
+        </div>
+        {% endif %}
+
+    </main>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        {% if categories %}
+        <div class="sidebar__widget">
+            <div class="sidebar__widget-header">&#128193; Wszystkie kategorie</div>
+            <div class="sidebar__widget-body">
+                {% for cat in categories %}
+                <a href="{{ cat.get_absolute_url }}"
+                   class="sidebar__category-link {% if cat.slug == category.slug %}" style="font-weight:700; color: var(--color-primary);"{% else %}"{% endif %}>
+                    <span>{{ cat.name }}</span>
+                    <span class="sidebar__category-count">{{ cat.post_count }}</span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </aside>
+
+</div>
+{% endblock %}

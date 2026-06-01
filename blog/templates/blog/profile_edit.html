@@ -1,0 +1,116 @@
+{% extends "blog/base.html" %}
+
+{% block content %}
+<div class="layout layout--narrow" style="padding-top:24px;">
+    <div class="post-detail">
+        <div class="post-detail__header">
+            <h1 class="post-detail__title" style="font-size:22px;">&#9998; Edytuj profil</h1>
+        </div>
+
+        <div class="post-detail__body" style="padding:24px;">
+            <form method="post">
+                {% csrf_token %}
+
+                <h3 style="font-size:15px; font-weight:700; margin-bottom:16px;">Dane konta</h3>
+
+                {% for field in user_form %}
+                <div class="form-group">
+                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}
+                    <p class="form-error">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+
+                <hr style="border:none; border-top:1px solid var(--color-border); margin:24px 0;">
+
+                <h3 style="font-size:15px; font-weight:700; margin-bottom:16px;">Profil publiczny</h3>
+
+                {% for field in profile_form %}
+                    {% if field.name == "theme" %}
+                    <!-- Zastępujemy domyślny <select> wizualnym selektorem -->
+                    <div class="form-group">
+                        <label class="form-label">{{ field.label }}</label>
+
+                        <!-- Ukryty <select> — wartość jest wysyłana z formularza -->
+                        <div style="display:none;">{{ field }}</div>
+
+                        <!-- Wizualne kafelki motywów -->
+                        <div class="theme-picker" id="theme-picker">
+                            <div class="theme-swatch {% if request.user.profile.theme == 'orange' %}theme-swatch--active{% endif %}"
+                                 style="background:#ff4500;" data-theme="orange" title="Klasyczny pomarańczowy"></div>
+                            <div class="theme-swatch {% if request.user.profile.theme == 'blue' %}theme-swatch--active{% endif %}"
+                                 style="background:#0079d3;" data-theme="blue" title="Oceaniczny niebieski"></div>
+                            <div class="theme-swatch {% if request.user.profile.theme == 'green' %}theme-swatch--active{% endif %}"
+                                 style="background:#2e7d32;" data-theme="green" title="Leśna zieleń"></div>
+                            <div class="theme-swatch {% if request.user.profile.theme == 'purple' %}theme-swatch--active{% endif %}"
+                                 style="background:#6a1b9a;" data-theme="purple" title="Królewska purpura"></div>
+                            <div class="theme-swatch {% if request.user.profile.theme == 'red' %}theme-swatch--active{% endif %}"
+                                 style="background:#c62828;" data-theme="red" title="Płomienna czerwień"></div>
+                            <div class="theme-swatch {% if request.user.profile.theme == 'teal' %}theme-swatch--active{% endif %}"
+                                 style="background:#00695c;" data-theme="teal" title="Morski turkus"></div>
+                            <div class="theme-swatch {% if request.user.profile.theme == 'dark' %}theme-swatch--active{% endif %}"
+                                 style="background:#161b22; border:2px solid #484f58;" data-theme="dark" title="Ciemny"></div>
+                        </div>
+                        <p class="form-hint">Kliknij, żeby wybrać motyw. Zmiany są widoczne natychmiast.</p>
+                    </div>
+                    {% else %}
+                    <div class="form-group">
+                        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% for error in field.errors %}
+                        <p class="form-error">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+
+                <div style="display:flex; gap:12px; margin-top:24px;">
+                    <button type="submit" class="btn btn--primary">&#10003; Zapisz zmiany</button>
+                    <a href="{% url 'blog:profile_detail' username=user.username %}" class="btn btn--outline">Anuluj</a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+// Wizualny selektor motywów
+(function() {
+    var select = document.getElementById('id_theme');
+    var swatches = document.querySelectorAll('.theme-swatch');
+
+    swatches.forEach(function(swatch) {
+        swatch.addEventListener('click', function() {
+            var theme = this.dataset.theme;
+
+            // Aktualizuj hidden select (wartość wysyłana z formularza)
+            if (select) select.value = theme;
+
+            // Wizualne zaznaczenie aktywnego kafelka
+            swatches.forEach(function(s) { s.classList.remove('theme-swatch--active'); });
+            this.classList.add('theme-swatch--active');
+
+            // Podgląd motywu na żywo — bez przeładowania strony
+            var body = document.body;
+            var themeClasses = ['theme-orange','theme-blue','theme-green','theme-purple','theme-red','theme-teal','theme-dark','dark-mode'];
+            themeClasses.forEach(function(c) { body.classList.remove(c); });
+
+            if (theme === 'dark') {
+                body.classList.add('dark-mode', 'theme-dark');
+                localStorage.setItem('darkMode', 'true');
+            } else {
+                body.classList.add('theme-' + theme);
+                localStorage.setItem('darkMode', 'false');
+                localStorage.setItem('theme', theme);
+            }
+        });
+    });
+})();
+</script>
+{% endblock %}
